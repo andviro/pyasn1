@@ -3,6 +3,7 @@ from pyasn1.type import tag, univ, char, useful, tagmap
 from pyasn1.codec.ber import eoo
 from pyasn1.compat.octets import oct2int, isOctetsType
 from pyasn1 import debug, error
+from decimal import Decimal
 
 class AbstractDecoder:
     protoComponent = None
@@ -291,9 +292,9 @@ class RealDecoder(AbstractSimpleDecoder):
                 if fo & 0x3 == 0x1:  # NR1
                     value = (int(head), 10, 0)
                 elif fo & 0x3 == 0x2:  # NR2
-                    value = float(head)
+                    value = Decimal(head)
                 elif fo & 0x3 == 0x3:  # NR3
-                    value = float(head)
+                    value = Decimal(head)
                 else:
                     raise error.SubstrateUnderrunError(
                         'Unknown NR (tag %s)' % fo

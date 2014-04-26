@@ -1,5 +1,6 @@
 # ASN.1 "universal" data types
 import operator, sys
+from decimal import Decimal
 from pyasn1.type import base, tag, constraint, namedtype, namedval, tagmap
 from pyasn1.codec.ber import eoo
 from pyasn1.compat import octets
@@ -570,14 +571,30 @@ class Real(base.AbstractSimpleAsn1Item):
                 return self.__normalizeBase10((int(value), 10, e))
         elif isinstance(value, Real):
             return tuple(value)
-        elif isinstance(value, str):  # handle infinite literal
+        elif isinstance(value, (basestring, Decimal)):  # handle infinite literal
             try:
-                return float(value)
+                return self._from_decimal(Decimal(value).normalize())
             except ValueError:
                 pass
         raise error.PyAsn1Error(
             'Bad real value syntax: %s' % (value,)
             )
+
+    @staticmethod
+    def _from_decimal(d):
+        sign, digits, exponent = d.as_tuple()
+        mantissa = 0
+        for d in digits:
+            mantissa *= 10
+            mantissa += d
+        if sign:
+            mantissa = -mantissa
+        return (mantissa, 10, exponent)
+
+    def as_decimal(self):
+        res = Decimal(self._value[0])
+        exp = Decimal(self._value[1])
+        return res * (exp ** self._value[2])
         
     def prettyOut(self, value):
         if value in self._inf:
@@ -589,7 +606,7 @@ class Real(base.AbstractSimpleAsn1Item):
     def isMinusInfinity(self): return self._value == self._minusInf
     def isInfinity(self): return self._value in self._inf
     
-    def __str__(self): return str(float(self))
+    def __str__(self): return str(self.as_decimal())
     
     def __add__(self, value): return self.clone(float(self) + value)
     def __radd__(self, value): return self + value
